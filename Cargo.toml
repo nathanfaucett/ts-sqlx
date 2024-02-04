@@ -1,0 +1,53 @@
+[package]
+authors = ["Nathan Faucett <nathanfaucett@gmail.com>"]
+description = "Typescript SQLx compile-time checked queries without a DSL."
+
+categories = ["database"]
+keywords = ["database", "async", "postgres", "mysql", "sqlite"]
+
+edition = "2021"
+license = "MIT/Apache-2.0"
+name = "ts_sqlx"
+repository = "https://github.com/nathanfaucett/ts-sqlx"
+rust-version = "1.74"
+version = "0.1.0"
+
+default-run = "ts-sqlx"
+
+[[bin]]
+name = "ts-sqlx"
+path = "src/bin/ts-sqlx.rs"
+
+[[bin]]
+name = "cargo-ts-sqlx"
+path = "src/bin/cargo-ts-sqlx.rs"
+
+[features]
+default = ["postgres", "sqlite", "mysql", "completions"]
+
+mysql = ["dep:sqlx-mysql"]
+postgres = ["dep:sqlx-postgres"]
+sqlite = ["dep:sqlx-sqlite"]
+
+completions = ["dep:clap_complete"]
+
+[dependencies]
+anyhow = "1.0"
+clap = {version = "4.4", features = ["derive", "env"]}
+clap_complete = {version = "4.4", optional = true}
+console = "0.15"
+ctrlc = "3.4"
+dotenvy = "0.15"
+notify = "6.1"
+once_cell = "1.19"
+regex = "1.10"
+sqlx-core = {version = "0.7", features = ["_rt-tokio", "bit-vec", "ipnetwork", "json", "bigdecimal", "rust_decimal", "mac_address", "chrono", "time", "uuid"]}
+sqlx-mysql = {version = "0.7", features = ["json", "bigdecimal", "rust_decimal", "chrono", "time", "uuid"], optional = true}
+sqlx-postgres = {version = "0.7", features = ["json", "bit-vec", "bigdecimal", "ipnetwork", "rust_decimal", "mac_address", "chrono", "time", "uuid"], optional = true}
+sqlx-sqlite = {version = "0.7", features = ["json", "chrono", "time", "uuid"], optional = true}
+swc_common = {version = "0.33", features = ["tty-emitter"]}
+swc_ecma_ast = "0.111"
+swc_ecma_parser = "0.142"
+tokio = {version = "1.36", features = ["full"]}
+url = {version = "2.5", default-features = false}
+walkdir = "2.4"

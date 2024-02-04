@@ -1,0 +1,20 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"sourceMap": true,
+		"strict": true,
+		"outDir": "esm",
+		"module": "esnext",
+		"target": "esnext",
+		"moduleResolution": "bundler",
+		"paths": {
+			"ts-sqlx": ["../src"]
+		}
+	},
+	"include": ["src", ".ts-sqlx/*"]
+}

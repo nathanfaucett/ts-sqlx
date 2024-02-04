@@ -1,0 +1,14 @@
+.nyc_output/
+.vscode/
+coverage/
+docs/
+example/
+src/
+node_modules/
+.editorconfig
+.eslintignore
+.eslintrc
+.gitignore
+npm-debug.log
+tsconfig.esm.json
+tsconfig.json
