@@ -1,6 +1,6 @@
 {
 	"name": "ts-sqlx",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Typescript SQLx compile-time checked queries without a DSL.",
 	"repository": {
 		"type": "git",

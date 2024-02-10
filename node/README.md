@@ -3,7 +3,7 @@
 [![license](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue")](LICENSE-MIT)
 [![npm (scoped)](https://img.shields.io/npm/v/ts-sqlx)](https://www.npmjs.com/package/ts-sqlx)
 
-Typescript SQLx compile-time checked queries without a DSL.
+Typescript SQLx compile-time checked queries without a DSL. see main [package](https://github.com/nathanfaucett/ts-sqlx)
 
 ```typescript
 import { sqlx, type SqlxString } from 'ts-sqlx';
