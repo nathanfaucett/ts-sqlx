@@ -7,7 +7,9 @@ src/
 node_modules/
 .editorconfig
 .eslintignore
-.eslintrc
+.eslintrc.cjs
+.prettierignore
+.prettierrc
 .gitignore
 npm-debug.log
 tsconfig.esm.json
