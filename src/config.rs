@@ -77,8 +77,6 @@ impl TryInto<RuntimeConfig> for Config {
                     "tsx".to_owned(),
                     "js".to_owned(),
                     "jsx".to_owned(),
-                    "svelte".to_owned(),
-                    "vue".to_owned(),
                 ]
             }),
             ignore_regexes: self

@@ -26,7 +26,7 @@ devDependencies:
     specifier: '2'
     version: 2.0.6
   dotenv:
-    specifier: ^16.4.1
+    specifier: '16'
     version: 16.4.1
   ts-node:
     specifier: '10'
