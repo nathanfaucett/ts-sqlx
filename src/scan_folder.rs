@@ -50,13 +50,8 @@ pub fn is_valid_path(
 pub fn scan_folder(
     folder: &Path,
     extensions: &[String],
-    ignore_patterns: &[String],
+    ignore_regexes: &[(Regex, bool)],
 ) -> Vec<PathBuf> {
-    let ignore_regexes = ignore_patterns
-        .iter()
-        .map(|ip| (pattern_to_regex(ip), ip.starts_with("!")))
-        .collect::<Vec<_>>();
-
     let result: Vec<_> = WalkDir::new(Path::new(folder))
         .follow_links(true)
         .into_iter()

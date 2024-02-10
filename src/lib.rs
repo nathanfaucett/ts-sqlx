@@ -1,5 +1,6 @@
 #[cfg(feature = "completions")]
 mod completions;
+pub mod config;
 pub mod database;
 pub mod opt;
 pub mod parse_source;

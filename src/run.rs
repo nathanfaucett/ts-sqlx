@@ -2,10 +2,8 @@ use anyhow::{anyhow, Result};
 use notify::{
     event::AccessKind, recommended_watcher, Error, Event, EventKind, RecursiveMode, Watcher,
 };
-use regex::Regex;
 use std::{
     collections::HashSet,
-    env::current_dir,
     fs::{create_dir_all, read_dir, remove_file, write},
     path::{Path, MAIN_SEPARATOR},
     sync::{
@@ -19,20 +17,23 @@ use std::{
 #[cfg(feature = "completions")]
 use crate::completions;
 use crate::{
-    opt::{Command, ConnectOpts, Opt},
+    config::RuntimeConfig,
+    opt::{Command, Opt},
     parse_source::parse_source,
-    scan_folder::{is_valid_path, pattern_to_regex, scan_folder},
-    ts::{get_foss_driver_for_database_url, ts_calls_to_string},
+    scan_folder::{is_valid_path, scan_folder},
+    ts::ts_calls_to_string,
 };
 
 pub fn run(opt: Opt) -> Result<()> {
     match opt.command {
-        Command::Run { connect_opts } => {
-            run_command(&connect_opts)?;
+        Command::Run { config_opts } => {
+            let config: RuntimeConfig = config_opts.try_into()?;
+            run_command(&config)?;
         }
-        Command::Watch { connect_opts } => {
-            run_command(&connect_opts)?;
-            watch_command(connect_opts)?;
+        Command::Watch { config_opts } => {
+            let config: RuntimeConfig = config_opts.try_into()?;
+            run_command(&config)?;
+            watch_command(&config)?;
         }
         #[cfg(feature = "completions")]
         Command::Completions { shell } => completions::run(shell),
@@ -40,67 +41,19 @@ pub fn run(opt: Opt) -> Result<()> {
     Ok(())
 }
 
-pub fn run_command(connect_opts: &ConnectOpts) -> Result<()> {
-    let database_url = &connect_opts.database_url;
-    let cwd = current_dir()?;
-    let folder = cwd.join(&connect_opts.folder);
-    let out_dir = if let Some(out) = &connect_opts.out {
-        cwd.join(out)
-    } else {
-        folder.join(".ts-sqlx")
-    };
-    run_for_folder(
-        database_url,
-        &folder,
-        &out_dir,
-        &vec![
-            "ts".to_owned(),
-            "tsx".to_owned(),
-            "js".to_owned(),
-            "jsx".to_owned(),
-            "svelte".to_owned(),
-            "vue".to_owned(),
-        ],
-        &vec!["*.d.ts".to_owned()],
-    )?;
+pub fn run_command(config: &RuntimeConfig) -> Result<()> {
+    run_for_folder(config)?;
     Ok(())
 }
 
-pub fn watch_command(connect_opts: ConnectOpts) -> Result<()> {
-    let database_url = connect_opts.database_url;
-    let cwd = current_dir()?;
-    let folder = cwd.join(connect_opts.folder);
-    let out_dir = if let Some(out) = connect_opts.out {
-        cwd.join(out)
-    } else {
-        folder.join(".ts-sqlx")
-    };
-    let ignore_regexes = vec!["*.d.ts".to_owned()]
-        .iter()
-        .map(|ip| (pattern_to_regex(ip), ip.starts_with("!")))
-        .collect::<Vec<_>>();
-
-    let watcher_folder = folder.clone();
+pub fn watch_command(config: &RuntimeConfig) -> Result<()> {
+    let watcher_config = config.clone();
     let mut watcher = recommended_watcher(move |res: Result<Event, Error>| match res {
         Ok(event) => match event.kind {
             EventKind::Access(access) => match access {
                 AccessKind::Close(_) => {
                     for path in event.paths {
-                        match run_for_file(
-                            &database_url,
-                            &path,
-                            &watcher_folder,
-                            &out_dir,
-                            &vec![
-                                "ts".to_owned(),
-                                "tsx".to_owned(),
-                                "js".to_owned(),
-                                "jsx".to_owned(),
-                                "svelte".to_owned(),
-                                "vue".to_owned(),
-                            ],
-                            &ignore_regexes,
-                        ) {
+                        match run_for_file(&path, &watcher_config) {
                             Ok(_) => {}
                             Err(e) => println!("{:?}", e),
                         }
@@ -116,7 +69,7 @@ pub fn watch_command(connect_opts: ConnectOpts) -> Result<()> {
         },
         Err(e) => println!("{:?}", e),
     })?;
-    watcher.watch(&folder, RecursiveMode::Recursive)?;
+    watcher.watch(&config.src, RecursiveMode::Recursive)?;
 
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
@@ -135,37 +88,29 @@ pub fn watch_command(connect_opts: ConnectOpts) -> Result<()> {
     Ok(())
 }
 
-pub fn run_for_folder(
-    database_url: &str,
-    folder: &Path,
-    out_dir: &Path,
-    extensions: &[String],
-    ignore_patterns: &[String],
-) -> Result<()> {
-    let files = scan_folder(folder, extensions, ignore_patterns);
+pub fn run_for_folder(config: &RuntimeConfig) -> Result<()> {
+    let files = scan_folder(&config.src, &config.extensions, &config.ignore_regexes);
     if files.is_empty() {
         return Ok(());
     }
 
-    let out_dir_path = Path::new(out_dir);
-    create_dir_all(out_dir_path)?;
-
     let mut current_files: HashSet<String> = HashSet::new();
-    for result in read_dir(out_dir_path)? {
-        let entry = result?;
-        if let Some(filename) = entry.file_name().to_str() {
-            if filename.ends_with(".d.ts") {
-                current_files.insert(filename.to_owned());
+    if config.dest.exists() {
+        for result in read_dir(&config.dest)? {
+            let entry = result?;
+            if let Some(filename) = entry.file_name().to_str() {
+                if filename.ends_with(".d.ts") {
+                    current_files.insert(filename.to_owned());
+                }
             }
         }
     }
-
-    let driver = get_foss_driver_for_database_url(database_url)?;
+    create_dir_all(&config.dest)?;
 
     for file in files {
         let filename: String = format!(
             "{}.d.ts",
-            file.strip_prefix(folder)?
+            file.strip_prefix(&config.src)?
                 .to_str()
                 .ok_or(anyhow!("invalid file {:?}", file))?
                 .replace(MAIN_SEPARATOR, "_")
@@ -177,42 +122,36 @@ pub fn run_for_folder(
         let mut ts_calls = Vec::with_capacity(sqlxs.capacity());
 
         for sqlx in sqlxs {
-            ts_calls.push(driver.to_ts_call(&sqlx, database_url)?);
+            let (database, database_url, driver) =
+                config.get_driver(sqlx.database.as_ref().map(String::as_str))?;
+            ts_calls.push(driver.to_ts_call(&sqlx.query, &database, &database_url)?);
         }
 
         current_files.remove(&filename);
-        write(out_dir_path.join(filename), ts_calls_to_string(&ts_calls))?;
+        write(config.dest.join(filename), ts_calls_to_string(&ts_calls))?;
     }
     for file in current_files {
-        remove_file(out_dir_path.join(file))?;
+        remove_file(config.dest.join(file))?;
     }
 
     Ok(())
 }
 
-pub fn run_for_file(
-    database_url: &str,
-    file: &Path,
-    folder: &Path,
-    out_dir: &Path,
-    extensions: &[String],
-    ignore_regexes: &[(Regex, bool)],
-) -> Result<()> {
+pub fn run_for_file(file: &Path, config: &RuntimeConfig) -> Result<()> {
     if !is_valid_path(
         file.to_str().ok_or(anyhow!("invalid file {:?}", file))?,
         file.extension().and_then(|e| e.to_str()),
-        ignore_regexes,
-        extensions,
+        &config.ignore_regexes,
+        &config.extensions,
     ) {
         return Ok(());
     }
 
-    let out_dir_path = Path::new(out_dir);
-    create_dir_all(out_dir_path)?;
+    create_dir_all(&config.dest)?;
 
     let filename: String = format!(
         "{}.d.ts",
-        file.strip_prefix(folder)?
+        file.strip_prefix(&config.src)?
             .to_str()
             .ok_or(anyhow!("invalid file {:?}", file))?
             .replace(MAIN_SEPARATOR, "_")
@@ -220,18 +159,19 @@ pub fn run_for_file(
 
     let sqlxs = parse_source(&file.into())?;
     if sqlxs.is_empty() {
-        let _ = remove_file(out_dir_path.join(filename));
+        let _ = remove_file(config.dest.join(filename));
         return Ok(());
     }
 
-    let driver = get_foss_driver_for_database_url(database_url)?;
     let mut ts_calls = Vec::with_capacity(sqlxs.capacity());
 
     for sqlx in sqlxs {
-        ts_calls.push(driver.to_ts_call(&sqlx, database_url)?);
+        let (database, database_url, driver) =
+            config.get_driver(sqlx.database.as_ref().map(String::as_str))?;
+        ts_calls.push(driver.to_ts_call(&sqlx.query, &database, &database_url)?);
     }
 
-    write(out_dir_path.join(filename), ts_calls_to_string(&ts_calls))?;
+    write(config.dest.join(filename), ts_calls_to_string(&ts_calls))?;
 
     Ok(())
 }

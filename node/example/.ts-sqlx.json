@@ -1,0 +1,6 @@
+{
+	"databases": {
+		"default": "postgres://postgres:postgres@localhost:5432/postgres",
+		"another": "postgres://postgres:postgres@localhost:5432/postgres"
+	}
+}

@@ -10,5 +10,5 @@ declare module 'ts-sqlx' {
 		'{now(), now()}'::timestamptz[] as timestamptzarray,
 		daterange('2014/01/01', '2014/01/31', '[]') as daterange,
 		interval '1 year' as interval
-`): SqlxString<[], {intarray: Array<number>, textarray: Array<string>, int4range: string, now: Date, jsonb: object, timestamptzarray: Array<Date>, daterange: string, interval: object}>;
+`, database: `another`): SqlxString<[], {intarray: Array<number>, textarray: Array<string>, int4range: string, now: Date, jsonb: object, timestamptzarray: Array<Date>, daterange: string, interval: object}>;
 }

@@ -15,7 +15,12 @@ use swc_ecma_ast::{
 use swc_ecma_parser::TsConfig;
 use swc_ecma_parser::{lexer::Lexer, Parser, Syntax};
 
-pub fn parse_source(path: &PathBuf) -> Result<Vec<String>> {
+pub struct SQL {
+    pub database: Option<String>,
+    pub query: String,
+}
+
+pub fn parse_source(path: &PathBuf) -> Result<Vec<SQL>> {
     let contents = read_to_string(path).unwrap();
 
     let source_map: Lrc<SourceMap> = Default::default();
@@ -116,7 +121,7 @@ pub fn find_sqlx_import_alias(
     None
 }
 
-fn recurse_and_find_sql(sqls: &mut Vec<String>, stmt: &Stmt, import_alias: &String) -> Result<()> {
+fn recurse_and_find_sql(sqls: &mut Vec<SQL>, stmt: &Stmt, import_alias: &String) -> Result<()> {
     match stmt {
         Stmt::Block(block) => {
             for stmt in &block.stmts {
@@ -198,7 +203,7 @@ fn recurse_and_find_sql(sqls: &mut Vec<String>, stmt: &Stmt, import_alias: &Stri
 
 pub fn process_block_stmt_as_expr(
     block_stmt: &Option<BlockStmt>,
-    sqls: &mut Vec<String>,
+    sqls: &mut Vec<SQL>,
     import_alias: &String,
 ) {
     if let Some(body) = block_stmt {
@@ -226,32 +231,57 @@ pub fn get_var_decl_name(var_declarator: &VarDeclarator) -> Option<String> {
     }
 }
 
-pub fn get_sql_from_expr(sqls: &mut Vec<String>, expr: &Expr, import_alias: &String) {
+pub fn get_sql_from_expr(sqls: &mut Vec<SQL>, expr: &Expr, import_alias: &String) {
     match &expr {
         Expr::Call(call_expr) => {
             if let Some(callee_expr) = &call_expr.callee.as_expr() {
                 if let Some(ident) = callee_expr.as_ident() {
-                    if ident.sym.as_str() == import_alias && call_expr.args.len() == 1 {
-                        let arg = call_expr.args.first().unwrap();
+                    if ident.sym.as_str() == import_alias && call_expr.args.len() >= 1 {
+                        let mut query: Option<String> = None;
+                        let mut database: Option<String> = None;
 
-                        match &*arg.expr {
+                        match &*call_expr.args.first().unwrap().expr {
                             Expr::Lit(lit) => match lit {
                                 Lit::Str(str) => {
-                                    sqls.push(str.value.to_string());
+                                    query.replace(str.value.to_string());
                                 }
                                 _ => {}
                             },
                             Expr::Tpl(tpl) => {
                                 for tpl_element in &tpl.quasis {
-                                    sqls.push(tpl_element.raw.to_string());
+                                    query.replace(tpl_element.raw.to_string());
                                 }
                             }
                             Expr::TaggedTpl(tagged_tpl) => {
                                 for tpl_element in &tagged_tpl.tpl.quasis {
-                                    sqls.push(tpl_element.raw.to_string());
+                                    query.replace(tpl_element.raw.to_string());
                                 }
                             }
                             _ => {}
+                        }
+                        if call_expr.args.len() >= 2 {
+                            match &*call_expr.args.get(1).unwrap().expr {
+                                Expr::Lit(lit) => match lit {
+                                    Lit::Str(str) => {
+                                        database.replace(str.value.to_string());
+                                    }
+                                    _ => {}
+                                },
+                                Expr::Tpl(tpl) => {
+                                    for tpl_element in &tpl.quasis {
+                                        database.replace(tpl_element.raw.to_string());
+                                    }
+                                }
+                                Expr::TaggedTpl(tagged_tpl) => {
+                                    for tpl_element in &tagged_tpl.tpl.quasis {
+                                        database.replace(tpl_element.raw.to_string());
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        if let Some(query) = query {
+                            sqls.push(SQL { query, database });
                         }
                     }
                 }
@@ -489,8 +519,8 @@ pub fn get_sql_from_expr(sqls: &mut Vec<String>, expr: &Expr, import_alias: &Str
     }
 }
 
-pub fn get_sql_from_var_decl(var_declarator: &VarDeclarator, import_alias: &String) -> Vec<String> {
-    let mut bag_of_sqls: Vec<String> = vec![];
+pub fn get_sql_from_var_decl(var_declarator: &VarDeclarator, import_alias: &String) -> Vec<SQL> {
+    let mut bag_of_sqls: Vec<SQL> = vec![];
     let var_decl_name = get_var_decl_name(var_declarator);
 
     if var_decl_name.is_none() {
@@ -505,7 +535,7 @@ pub fn get_sql_from_var_decl(var_declarator: &VarDeclarator, import_alias: &Stri
 }
 
 fn process_class_member(
-    sqls: &mut Vec<String>,
+    sqls: &mut Vec<SQL>,
     body_stmt: &ClassMember,
     import_alias: &String,
 ) -> Result<()> {
@@ -560,7 +590,7 @@ fn process_class_member(
 }
 
 pub fn process_default_decl(
-    sqls: &mut Vec<String>,
+    sqls: &mut Vec<SQL>,
     default_decl: &DefaultDecl,
     import_alias: &String,
 ) -> Result<()> {
@@ -586,7 +616,7 @@ pub fn process_default_decl(
 }
 
 pub fn process_class_decl(
-    sqls: &mut Vec<String>,
+    sqls: &mut Vec<SQL>,
     class: &ClassDecl,
     import_alias: &String,
 ) -> Result<()> {
@@ -604,7 +634,7 @@ pub fn process_class_decl(
     Ok(())
 }
 
-pub fn process_decl(sqls: &mut Vec<String>, decl: &Decl, import_alias: &String) -> Result<()> {
+pub fn process_decl(sqls: &mut Vec<SQL>, decl: &Decl, import_alias: &String) -> Result<()> {
     match decl {
         Decl::Class(class) => {
             process_class_decl(sqls, class, import_alias)?;

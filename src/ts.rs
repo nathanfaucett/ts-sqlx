@@ -49,7 +49,7 @@ impl fmt::Display for TSFieldType {
 
 pub struct QueryToTSDriver {
     url_schemes: &'static [&'static str],
-    to_ts_call: fn(&str, &str) -> sqlx_core::Result<TSCall>,
+    to_ts_call: fn(&str, &str, &Url) -> sqlx_core::Result<TSCall>,
 }
 
 impl QueryToTSDriver {
@@ -63,8 +63,13 @@ impl QueryToTSDriver {
         }
     }
 
-    pub fn to_ts_call(&self, query: &str, database_url: &str) -> sqlx_core::Result<TSCall> {
-        (self.to_ts_call)(query, database_url)
+    pub fn to_ts_call(
+        &self,
+        query: &str,
+        database: &str,
+        database_url: &Url,
+    ) -> sqlx_core::Result<TSCall> {
+        (self.to_ts_call)(query, database, database_url)
     }
 }
 
@@ -74,11 +79,12 @@ pub const FOSS_DRIVERS: &[QueryToTSDriver] = &[
     QueryToTSDriver::new::<sqlx_sqlite::Sqlite>(),
 ];
 
-pub fn get_foss_driver_for_database_url(database_url: &str) -> anyhow::Result<&QueryToTSDriver> {
-    let database_url_parsed: Url = database_url.parse()?;
+pub fn get_foss_driver_for_database_url<'a, 'b>(
+    database_url: &'a Url,
+) -> anyhow::Result<&'b QueryToTSDriver> {
     if let Some(driver) = FOSS_DRIVERS
         .into_iter()
-        .find(|driver| driver.url_schemes.contains(&database_url_parsed.scheme()))
+        .find(|driver| driver.url_schemes.contains(&database_url.scheme()))
     {
         Ok(driver)
     } else {
@@ -88,6 +94,7 @@ pub fn get_foss_driver_for_database_url(database_url: &str) -> anyhow::Result<&Q
 
 pub struct TSCall {
     pub query: String,
+    pub database: String,
     pub params: Vec<TSFieldType>,
     pub result: Vec<(String, TSFieldType)>,
 }
@@ -96,8 +103,13 @@ impl fmt::Display for TSCall {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "export function sqlx(query: `{}`): SqlxString<[{}], {{{}}}>;",
+            "export function sqlx(query: `{}`{}): SqlxString<[{}], {{{}}}>;",
             self.query,
+            if self.database == "default" {
+                "".to_owned()
+            } else {
+                format!(", database: `{}`", self.database)
+            },
             self.params
                 .iter()
                 .map(|p| format!("{}", p))
@@ -112,11 +124,15 @@ impl fmt::Display for TSCall {
     }
 }
 
-pub fn to_ts_call<DB: DatabaseExt>(query: &str, database_url: &str) -> sqlx_core::Result<TSCall>
+pub fn to_ts_call<DB: DatabaseExt>(
+    query: &str,
+    database: &str,
+    database_url: &Url,
+) -> sqlx_core::Result<TSCall>
 where
     for<'a> &'a mut DB::Connection: Executor<'a, Database = DB>,
 {
-    let describe = DB::describe_blocking(query, database_url)?;
+    let describe = DB::describe_blocking(query, database_url.as_str())?;
 
     let mut result = Vec::new();
     for column in describe.columns() {
@@ -138,6 +154,7 @@ where
 
     Ok(TSCall {
         query: query.to_owned(),
+        database: database.to_owned(),
         params,
         result,
     })
