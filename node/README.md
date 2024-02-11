@@ -21,3 +21,5 @@ function query<P extends unknown[], R = unknown>(
 const post = await query(sqlx('select p.* from posts p where p.id = $1;'), 1);
 console.log(post);
 ```
+
+See [example](https://github.com/nathanfaucett/ts-sqlx/tree/main/node/example) for a "full" project example

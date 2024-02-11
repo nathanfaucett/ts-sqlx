@@ -7,12 +7,12 @@ use ts_sqlx::{opt::Opt, run::run};
 #[derive(Parser, Debug)]
 #[clap(bin_name = "cargo")]
 enum Cli {
-    Sqlx(Opt),
+  Sqlx(Opt),
 }
 
 fn main() -> Result<()> {
-    dotenvy::dotenv().ok();
-    let Cli::Sqlx(opt) = Cli::parse();
-    run(opt)?;
-    Ok(())
+  dotenvy::dotenv().ok();
+  let Cli::Sqlx(opt) = Cli::parse();
+  run(opt)?;
+  Ok(())
 }

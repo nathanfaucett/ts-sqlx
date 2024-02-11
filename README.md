@@ -53,6 +53,8 @@ or create a `.ts-sqlx.json` file like
 
 run in watch mode `ts-sqlx watch` in the root of your project, just once with `ts-sqlx run` or for help `ts-sqlx help`
 
+see [example](https://github.com/nathanfaucett/ts-sqlx/tree/main/node/example) for a "full" project example
+
 ## References
 
 - [sqlx](https://github.com/launchbadge/sqlx)
