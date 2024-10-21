@@ -5,6 +5,7 @@ dist/
 .nyc_output/
 .vscode/
 coverage/
+example/
 docs/
 src/
 test-data/
