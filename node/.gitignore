@@ -1,8 +1,11 @@
+.parcel-cache/
+dist/
 .vscode/
 node_modules/
 coverage/
 docs/
 types/
+browser/
 cjs/
 esm/
 .nyc_output/

@@ -1,65 +1,77 @@
 {
-	"name": "ts-sqlx",
-	"version": "0.1.1",
-	"description": "Typescript SQLx compile-time checked queries without a DSL.",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/nathanfaucett/ts-sqlx"
-	},
-	"type": "commonjs",
-	"module": "esm/index.js",
-	"main": "cjs/index.js",
-	"types": "types/index.d.ts",
-	"scripts": {
-		"buildTS": "tsc",
-		"buildESM": "tsc -b tsconfig.esm.json",
-		"build": "npm run clean && npm run buildTS && npm run buildESM",
-		"doc": "typedoc",
-		"prepublishOnly": "npm run build",
-		"test": "ts-node node_modules/.bin/tape src/**/*.test.{ts,tsx} | tap-spec",
-		"bench": "ts-node node_modules/.bin/tape src/**/*.benchmark.{ts,tsx} | tap-spec",
-		"coverage": "nyc --reporter=lcov --check-coverage --lines=75 --require ts-node/register tape src/**/*.test.{ts,tsx} | tap-spec; nyc report ---reporter=text",
-		"clean": "rm -rf esm cjs types .nyc_output coverage",
-		"lint": "eslint . --fix",
-		"prettier": "prettier --ignore-path .eslintignore --ignore-unknown --write .",
-		"preCommit": "npm run prettier && npm run lint"
-	},
-	"keywords": [
-		"typescript",
-		"sqlx"
-	],
-	"author": "Nathan Faucett",
-	"license": "(MIT OR Apache-2.0)",
-	"readmeFilename": "README.md",
-	"devDependencies": {
-		"@typescript-eslint/eslint-plugin": "6",
-		"@typescript-eslint/parser": "6",
-		"eslint": "8",
-		"eslint-config-prettier": "9",
-		"eslint-plugin-prettier": "5",
-		"prettier": "3",
-		"@types/raf": "3",
-		"@types/tape": "5",
-		"husky": "9",
-		"nyc": "15",
-		"tap-nyc": "1",
-		"tap-spec": "5",
-		"tape": "5",
-		"ts-node": "10",
-		"tslib": "2",
-		"typedoc": "0",
-		"typescript": "5"
-	},
-	"nyc": {
-		"include": [
-			"src"
-		],
-		"exclude": [
-			"src/**/*.test.*"
-		],
-		"extension": [
-			".ts",
-			".tsx"
-		]
-	}
+  "name": "ts-sqlx",
+  "version": "0.1.2",
+  "description": "Typescript SQLx compile-time checked queries without a DSL.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nathanfaucett/ts-sqlx"
+  },
+  "keywords": [
+    "typescript",
+    "sqlx"
+  ],
+  "author": "Nathan Faucett",
+  "license": "(MIT OR Apache-2.0)",
+  "readmeFilename": "README.md",
+  "module": "esm/index.js",
+  "main": "cjs/index.js",
+  "types": "types/index.d.ts",
+  "scripts": {
+    "buildTSC": "tsc",
+    "buildESM": "tsc -b tsconfig.esm.json",
+    "buildBrowser": "rollup -c",
+    "build": "npm run clean && npm run buildTSC && npm run buildESM && npm run buildBrowser",
+    "doc": "typedoc",
+    "prepublishOnly": "npm run build",
+    "test": "ts-node node_modules/tape/bin/tape src/**/*.test.{ts,tsx} | tap-spec",
+    "bench": "ts-node node_modules/tape/bin/tape src/**/*.benchmark.{ts,tsx} | tap-spec",
+    "coverage": "nyc --reporter=lcov --check-coverage --lines=75 --require ts-node/register tape src/**/*.test.{ts,tsx} | tap-spec; nyc report ---reporter=text",
+    "coverageHTML": "nyc --reporter=lcov --check-coverage --lines=75 --require ts-node/register tape src/**/*.test.{ts,tsx} | tap-spec; nyc report ---reporter=html",
+    "clean": "rm -rf esm cjs browser types .nyc_output coverage",
+    "lint": "biome lint ./src",
+    "format": "biome format --write .",
+    "preCommit": "npm run format && npm run lint && npm run coverage",
+    "prepare": "husky"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run preCommit"
+    }
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1",
+    "@rollup/plugin-commonjs": "28",
+    "@rollup/plugin-node-resolve": "15",
+    "@rollup/plugin-typescript": "12",
+    "@types/tape": "5",
+    "events": "3",
+    "husky": "9",
+    "nyc": "17",
+    "process": "0",
+    "rollup": "4",
+    "rollup-plugin-esm-import-to-url": "2",
+    "@rollup/plugin-terser": "0",
+    "tap-nyc": "1",
+    "tap-spec": "5",
+    "tape": "5",
+    "ts-node": "10",
+    "tslib": "2",
+    "typedoc": "0",
+    "typescript": "5"
+  },
+  "peerDependencies": {
+    "tslib": "2"
+  },
+  "nyc": {
+    "include": [
+      "src"
+    ],
+    "exclude": [
+      "src/**/*.test.*"
+    ],
+    "extension": [
+      ".ts",
+      ".tsx"
+    ]
+  }
 }

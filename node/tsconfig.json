@@ -1,24 +1,24 @@
 {
-	"compilerOptions": {
-		"importHelpers": true,
-		"target": "ES2015",
-		"module": "CommonJS",
-		"moduleResolution": "Node",
-		"declaration": true,
-		"outDir": "cjs",
-		"declarationDir": "types",
-		"strict": true,
-		"downlevelIteration": true,
-		"esModuleInterop": true,
-		"lib": ["ESNext"]
-	},
-	"include": ["src"],
-	"exclude": ["src/**/*.test.*", "src/**/*.benchmark.*"],
-	"typedocOptions": {
-		"entryPoints": ["src/index.ts"],
-		"out": "docs",
-		"excludeExternals": true,
-		"excludePrivate": true,
-		"excludeInternal": true
-	}
+  "compilerOptions": {
+    "importHelpers": true,
+    "target": "ES2015",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "declaration": true,
+    "outDir": "cjs",
+    "declarationDir": "types",
+    "strict": true,
+    "skipLibCheck": true,
+    "downlevelIteration": true,
+    "lib": ["ESNext", "DOM"],
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.*", "src/**/*.benchmark.*"],
+  "typedocOptions": {
+    "entryPoints": ["src/index.ts"],
+    "out": "docs",
+    "excludeExternals": true,
+    "excludePrivate": true,
+    "excludeInternal": true,
+  },
 }

@@ -9,11 +9,11 @@ use swc_common::{
   FileName, SourceMap,
 };
 use swc_ecma_ast::{
-  BlockStmt, ClassDecl, ClassMember, Decl, DefaultDecl, Expr, ImportDecl, ImportSpecifier, Lit,
-  ModuleDecl, ModuleExportName, ModuleItem, OptChainBase, Pat, Prop, PropOrSpread, Stmt, SuperProp,
-  VarDeclarator,
+  AssignTarget, AssignTargetPat, BlockStmt, ClassDecl, ClassMember, Decl, DefaultDecl, Expr,
+  ImportDecl, ImportSpecifier, Lit, ModuleDecl, ModuleExportName, ModuleItem, OptChainBase, Pat,
+  Prop, PropOrSpread, SimpleAssignTarget, Stmt, SuperProp, VarDeclarator,
 };
-use swc_ecma_parser::TsConfig;
+use swc_ecma_parser::TsSyntax;
 use swc_ecma_parser::{lexer::Lexer, Parser, Syntax};
 
 #[derive(Hash, Eq, PartialEq)]
@@ -29,8 +29,8 @@ pub fn parse_source(path: &PathBuf) -> Result<HashSet<SQL>> {
   let handler = Handler::with_tty_emitter(ColorConfig::Auto, true, false, Some(source_map.clone()));
 
   let file_path = path.to_str().ok_or(anyhow!(""))?.to_owned();
-  let source_file = source_map.new_source_file(FileName::Custom(file_path), contents);
-  let ts_config: TsConfig = TsConfig {
+  let source_file = source_map.new_source_file(Lrc::new(FileName::Custom(file_path)), contents);
+  let ts_config: TsSyntax = TsSyntax {
     tsx: false,
     decorators: true,
     dts: false,
@@ -351,10 +351,26 @@ pub fn get_sql_from_expr(sqls: &mut HashSet<SQL>, expr: &Expr, import_alias: &St
       let right_expr = &assign.right;
       get_sql_from_expr(sqls, right_expr, import_alias);
 
-      let left_expr = &assign.left;
-      left_expr
-        .as_expr()
-        .map(|expr| get_sql_from_expr(sqls, expr, import_alias));
+      match &assign.left {
+        AssignTarget::Simple(left_expr) => match left_expr {
+          SimpleAssignTarget::Ident(_) => {}
+          SimpleAssignTarget::Member(_) => {}
+          SimpleAssignTarget::OptChain(_) => {}
+          SimpleAssignTarget::Paren(_) => {}
+          SimpleAssignTarget::SuperProp(_) => {}
+          SimpleAssignTarget::TsAs(_) => {}
+          SimpleAssignTarget::TsInstantiation(_) => {}
+          SimpleAssignTarget::TsNonNull(_) => {}
+          SimpleAssignTarget::TsSatisfies(_) => {}
+          SimpleAssignTarget::TsTypeAssertion(_) => {}
+          SimpleAssignTarget::Invalid(_) => {}
+        },
+        AssignTarget::Pat(left_pat) => match left_pat {
+          AssignTargetPat::Array(_) => {}
+          AssignTargetPat::Object(_) => {}
+          AssignTargetPat::Invalid(_) => {}
+        },
+      }
     }
     Expr::Member(member) => {
       let obj = &member.obj;
@@ -668,8 +684,8 @@ pub fn process_decl(sqls: &mut HashSet<SQL>, decl: &Decl, import_alias: &String)
     Decl::TsTypeAlias(_) => {}
     Decl::TsEnum(_) => {}
     Decl::TsModule(module) => {
-      for stmt in &module.body {
-        for block in &stmt.as_ts_module_block() {
+      if let Some(stmt) = &module.body {
+        if let Some(block) = stmt.as_ts_module_block() {
           for body in &block.body {
             let stmt = &body.clone().stmt();
             if let Some(stmt) = stmt {

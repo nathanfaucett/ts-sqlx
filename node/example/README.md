@@ -8,3 +8,4 @@ ts-sqlx example
 - create database `docker compose up -d`
 - create the database `sqlx database create`
 - run migrations `sqlx migrate run`
+- run ts-sqlx `ts-sqlx run` or `ts-sqlx watch`

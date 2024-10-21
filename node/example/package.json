@@ -1,22 +1,22 @@
 {
-	"type": "module",
-	"private": true,
-	"main": "src/index.ts",
-	"scripts": {
-		"start": "node --experimental-specifier-resolution=node --experimental-modules --loader ts-node/esm ./src/index.ts"
-	},
-	"devDependencies": {
-		"@types/node": "20",
-		"@types/pg": "8",
-		"@types/pg-pool": "2",
-		"dotenv": "16",
-		"ts-node": "10",
-		"tslib": "2",
-		"typescript": "5"
-	},
-	"dependencies": {
-		"pg": "8",
-		"pg-pool": "3",
-		"ts-sqlx": "file:../"
-	}
+  "type": "module",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "node --loader ts-node/esm ./src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "22",
+    "@types/pg": "8",
+    "@types/pg-pool": "2",
+    "dotenv": "16",
+    "ts-node": "10",
+    "tslib": "2",
+    "typescript": "5"
+  },
+  "dependencies": {
+    "pg": "8",
+    "pg-pool": "3",
+    "ts-sqlx": "file:../"
+  }
 }
