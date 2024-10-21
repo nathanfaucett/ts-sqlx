@@ -2408,7 +2408,7 @@ dependencies = [
 
 [[package]]
 name = "ts_sqlx"
-version = "0.1.4"
+version = "0.1.3"
 dependencies = [
  "anyhow",
  "clap",
